@@ -3,28 +3,17 @@ import numpy as np
 import cv2
 from cv2utils.camera import make_camera_with_args
 from kernels import *
-
-kernel = BLUR(7)
-kernel = OUTLINER
-
-face_cascade = cv2.CascadeClassifier(
-    "./classifiers/haarcascade_frontalface_default.xml"
-)
-
+from choose_sections import *
 
 def process(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = list(face_cascade.detectMultiScale(gray))
-
-    sorted(faces, key=lambda face: -face[2] * face[3])
+    sections = choose_section(frame)
 
     processed = cv2.filter2D(frame, -1, kernel)
 
-    for x, y, w, h in faces[:num_of_people]:
+    for x, y, w, h in sections:
         # cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 2)
         frame[y : y + h, x : x + w] = processed[y : y + h, x : x + w]
 
-    frame = processed
 
     frame = cv2.resize(frame, dsize=(1920, 1080))
 
@@ -52,8 +41,11 @@ parser.add_argument(
     help="The number of people in the video stream",
 )
 camera, args = make_camera_with_args(
-    parser=parser, cam=1, log=True, res=(640, 360), fps=30
+    parser=parser, cam=0, log=True, res=(640, 360), fps=30
 )
 num_of_people = args.people
+
+kernel = OUTLINER
+choose_section = full
 
 camera.stream(prepare=prepare(process))
